@@ -33,7 +33,7 @@ val agg = (events
     count(when(col("event_type") === "view", 1)).as("views"),
     count(when(col("event_type") === "cart", 1)).as("carts"),
     count(when(col("event_type") === "purchase", 1)).as("purchases"),
-    approx_count_distinct("user_id").as("unique_users")))
+    approx_count_distinct("user_id", 0.02).as("unique_users")))
 
 def writeToMongo(batch: DataFrame, batchId: Long): Unit = {
   val out = batch
