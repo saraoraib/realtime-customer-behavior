@@ -34,6 +34,7 @@ services:
       - mongo
     volumes:
       - ./spark:/app
+      - ./data:/data
     command: sleep infinity
 
 volumes:
