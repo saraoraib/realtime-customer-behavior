@@ -1,0 +1,20 @@
+# data (too large)
+data/*.csv
+*.csv.zip
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# Scala / sbt / Spark
+target/
+project/target/
+project/project/
+spark-warehouse/
+checkpoint/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
