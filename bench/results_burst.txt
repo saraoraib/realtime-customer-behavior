@@ -1,0 +1,1 @@
+burst_events=50000 drain_s=19.94 events_per_s=2508 (single hot key, clean system, one run)
