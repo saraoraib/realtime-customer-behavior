@@ -14,7 +14,7 @@ def get_db():
 db = get_db()
 st.title("Real-Time Customer Behavior Intelligence")
 
-tab1, tab2, tab3 = st.tabs(["Product alerts", "Product timeline", "Sketch accuracy"])
+tab1, tab2, tab3, tab4 = st.tabs(["Product alerts", "Product timeline", "Sketch accuracy", "Control"])
 
 # ---------- Tab 1: alerts (many views, few add-to-carts) ----------
 with tab1:
@@ -96,3 +96,32 @@ with tab3:
         f.metric("Observed error", f"{h['error_pct']:.2f}%")
         g.metric("Memory", f"{h['memory_bytes'] / 1024:,.2f} KB")
         g.caption(f"exact (lower bound): {h['exact_memory_bytes'] / 1024:,.0f} KB")
+
+
+# ---------- Tab 4: control the replayer ----------
+with tab4:
+    ctl = db.control.find_one({"_id": "replayer"}) or {"rate": 200, "paused": False}
+    st.caption(f"Replayer state: rate = {ctl.get('rate', 200)} events/s, "
+               f"paused = {ctl.get('paused', False)}")
+    rate = st.slider("Replay rate (events/s)", 10, 3000, int(ctl.get("rate", 200)), step=10)
+    b1, b2, b3 = st.columns(3)
+    if b1.button("Apply rate"):
+        db.control.update_one({"_id": "replayer"}, {"$set": {"rate": rate}}, upsert=True)
+        st.success(f"Rate set to {rate} events/s")
+    if b2.button("Pause"):
+        db.control.update_one({"_id": "replayer"}, {"$set": {"paused": True}}, upsert=True)
+        st.info("Paused")
+    if b3.button("Resume"):
+        db.control.update_one({"_id": "replayer"}, {"$set": {"paused": False}}, upsert=True)
+        st.info("Resumed")
+
+    st.subheader("Inject a campaign")
+    st.write("Many views but few add-to-carts on one product, to trigger an alert.")
+    i1, i2, i3 = st.columns(3)
+    inj_pid = i1.text_input("Product ID", "1004856", key="inj_pid")
+    inj_views = i2.slider("Views", 50, 2000, 300)
+    inj_carts = i3.slider("Add-to-carts", 0, 50, 2)
+    if st.button("Inject campaign") and inj_pid.strip().isdigit():
+        db.control.update_one({"_id": "replayer"}, {"$set": {"inject": {
+            "product_id": int(inj_pid), "views": inj_views, "carts": inj_carts}}}, upsert=True)
+        st.success("Campaign queued. Check the Product alerts tab in a few seconds.")
