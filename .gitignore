@@ -18,3 +18,5 @@ checkpoint/
 .idea/
 .vscode/
 .DS_Store
+spark_run.log
+bench/results.csv
