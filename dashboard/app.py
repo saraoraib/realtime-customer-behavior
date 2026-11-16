@@ -14,7 +14,7 @@ def get_db():
 db = get_db()
 st.title("Real-Time Customer Behavior Intelligence")
 
-tab1, tab2, tab3, tab4 = st.tabs(["Product alerts", "Product timeline", "Sketch accuracy", "Control"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Product alerts", "Product timeline", "Sketch accuracy", "Control", "Analytics"])
 
 # ---------- Tab 1: alerts (many views, few add-to-carts) ----------
 with tab1:
@@ -125,3 +125,28 @@ with tab4:
         db.control.update_one({"_id": "replayer"}, {"$set": {"inject": {
             "product_id": int(inj_pid), "views": inj_views, "carts": inj_carts}}}, upsert=True)
         st.success("Campaign queued. Check the Product alerts tab in a few seconds.")
+
+
+# ---------- Tab 5: Spark SQL batch analytics ----------
+with tab5:
+    st.subheader("Funnel by category (Spark SQL batch over MongoDB)")
+    fn = pd.DataFrame(list(db.category_funnel.find({}, {"_id": 0})))
+    if fn.empty:
+        st.warning("Run spark/batch_analytics.scala first.")
+    else:
+        fn = fn.sort_values("views", ascending=False)
+        st.dataframe(fn, width="stretch")
+        st.bar_chart(fn.set_index("category")[["views", "carts", "purchases"]])
+
+        st.subheader("Products with many views but few add-to-carts")
+        ins = pd.DataFrame(list(db.product_insights.find({}, {"_id": 0})))
+        if not ins.empty:
+            c1, c2 = st.columns(2)
+            cats = ["all"] + sorted(ins["category"].dropna().unique().tolist())
+            cat = c1.selectbox("Category", cats)
+            mv = c2.slider("Minimum views", 100, int(ins["views"].max()), 100)
+            view = ins[ins["views"] >= mv]
+            if cat != "all":
+                view = view[view["category"] == cat]
+            st.metric("Products flagged", len(view))
+            st.dataframe(view.sort_values("views", ascending=False), width="stretch")
